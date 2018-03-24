@@ -63,27 +63,28 @@ def main():
 
     # Train/validation data preparation
     if imgmove:
-        os.mkdir('trainval_'+superclass)
-        os.mkdir(trainpath)
-        os.mkdir(valpath)
-        sourcepath = '../zsl_'+testName[superclass[0]]+'_'+str(superclass).lower()+'_train_'+date\
-                     +'/zsl_'+testName[superclass[0]]+'_'+str(superclass).lower()+'_train_images_'+date
-        categories = os.listdir(sourcepath)
-        for eachclass in categories:
-            if eachclass[0] == superclass[0]:
-                print(eachclass)
-                os.mkdir(trainpath+'/'+eachclass)
-                os.mkdir(valpath+'/'+eachclass)
-                imgs = os.listdir(sourcepath+'/'+eachclass)
-                idx = 0
-                for im in imgs:
-                    if idx%8 == 0:
-                        shutil.copyfile(sourcepath+'/'+eachclass+
-                                        '/'+im, valpath+'/'+eachclass+'/'+im)
-                    else:
-                        shutil.copyfile(sourcepath+'/'+eachclass+
-                                        '/'+im, trainpath+'/'+eachclass+'/'+im)
-                    idx += 1
+        if not os.path.exists('trainval_'+superclass):
+            os.mkdir('trainval_'+superclass)
+            os.mkdir(trainpath)
+            os.mkdir(valpath)
+            sourcepath = '../zsl_'+testName[superclass[0]]+'_'+str(superclass).lower()+'_train_'+date\
+                         +'/zsl_'+testName[superclass[0]]+'_'+str(superclass).lower()+'_train_images_'+date
+            categories = os.listdir(sourcepath)
+            for eachclass in categories:
+                if eachclass[0] == superclass[0]:
+                    print(eachclass)
+                    os.mkdir(trainpath+'/'+eachclass)
+                    os.mkdir(valpath+'/'+eachclass)
+                    imgs = os.listdir(sourcepath+'/'+eachclass)
+                    idx = 0
+                    for im in imgs:
+                        if idx%8 == 0:
+                            shutil.copyfile(sourcepath+'/'+eachclass+
+                                            '/'+im, valpath+'/'+eachclass+'/'+im)
+                        else:
+                            shutil.copyfile(sourcepath+'/'+eachclass+
+                                            '/'+im, trainpath+'/'+eachclass+'/'+im)
+                        idx += 1
 
     # Train and validation ImageDataGenerator
     batchsize = 32
@@ -119,10 +120,10 @@ def main():
     steps_per_epoch = int(train_generator.n/batchsize)
     validation_steps = int(valid_generator.n/batchsize)
 
-    weightname = 'model/mobile_'+superclass+'_wgt.h5'
+    weightname = 'model/mobile_'+superclass+'_wgt-{epoch:02d}-{val_loss:.5f}.h5'
 
-    checkpointer = ModelCheckpoint(weightname, monitor='val_loss', verbose=0,
-                        save_best_only=True, save_weights_only=True, mode='auto', period=2)
+    checkpointer = ModelCheckpoint(weightname, monitor='val_loss', verbose=2,
+                        save_best_only=True, save_weights_only=True, mode='auto', period=1)
     model.fit_generator(
         train_generator,
         steps_per_epoch=steps_per_epoch,
