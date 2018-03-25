@@ -27,9 +27,10 @@ The trained model will be saved at 'model/mobile_Animals_wgt.h5'
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+from time import time
 from keras.preprocessing.image import ImageDataGenerator
 from keras.applications.mobilenet import MobileNet
-from keras.callbacks import ModelCheckpoint
+from keras.callbacks import ModelCheckpoint, TensorBoard
 from keras.optimizers import SGD
 import os
 import shutil
@@ -119,10 +120,11 @@ def main():
 
     steps_per_epoch = int(train_generator.n/batchsize)
     validation_steps = int(valid_generator.n/batchsize)
-
+    visual = TensorBoard(log_dir="logs/", histogram_freq=0,
+                batch_size=batchsize, write_graph=True)
     weightname = 'model/mobile_'+superclass+'_wgt-{epoch:02d}-{val_loss:.5f}.h5'
 
-    checkpointer = ModelCheckpoint(weightname, monitor='val_loss', verbose=2,
+    checkpointer = ModelCheckpoint(weightname, monitor='val_loss', verbose=0,
                         save_best_only=True, save_weights_only=True, mode='auto', period=1)
     model.fit_generator(
         train_generator,
@@ -130,7 +132,7 @@ def main():
         epochs=100,
         validation_data=valid_generator,
         validation_steps=validation_steps,
-        callbacks=[checkpointer])
+        callbacks=[checkpointer, visual])
 
 
 if __name__ == "__main__":
