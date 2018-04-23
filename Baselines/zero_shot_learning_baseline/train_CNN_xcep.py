@@ -32,7 +32,7 @@ import os
 import shutil
 import sys
 
-from keras.applications.mobilenet import MobileNet
+from keras.applications.xception import Xception
 from keras.callbacks import ModelCheckpoint, TensorBoard
 from keras.optimizers import SGD
 from keras.preprocessing.image import ImageDataGenerator
@@ -89,7 +89,7 @@ def main():
                         idx += 1
 
     # Train and validation ImageDataGenerator
-    batchsize = 32
+    batchsize = 10
 
     train_datagen = ImageDataGenerator(
         rescale=1./255,
@@ -103,16 +103,16 @@ def main():
 
     train_generator = train_datagen.flow_from_directory(
         trainpath,
-        target_size=(224, 224),
+        target_size=(299, 299),
         batch_size=batchsize)
 
     valid_generator = test_datagen.flow_from_directory(
         valpath,
-        target_size=(224, 224),
+        target_size=(299, 299),
         batch_size=batchsize)
 
     # Train MobileNet
-    model = MobileNet(include_top=True, weights=None,
+    model = Xception(include_top=True, weights=None,
                       input_tensor=None, input_shape=None,
                       pooling=None, classes=classNum[superclass[0]])
     model.summary()
@@ -123,12 +123,12 @@ def main():
     validation_steps = int(valid_generator.n/batchsize)
     visual = TensorBoard(log_dir="model/", histogram_freq=0,
                 batch_size=batchsize, write_graph=True)
-    weightname = 'model/mobile_'+superclass+'_wgt-{epoch:02d}-{val_loss:.4f}-{val_acc:.3f}.h5'
+    weightname = 'model/xception_'+superclass+'_wgt-{epoch:02d}-{val_loss:.4f}-{val_acc:.3f}.h5'
 
     checkpointer = ModelCheckpoint(weightname, monitor='val_loss', verbose=0,
                         save_best_only=True, save_weights_only=True, mode='auto', period=1)
 
-    model.load_weights('model/mobile_Animals_wgt.h5')
+    #model.load_weights('model/mobile_Animals_wgt.h5')
     model.fit_generator(
         train_generator,
         steps_per_epoch=steps_per_epoch,

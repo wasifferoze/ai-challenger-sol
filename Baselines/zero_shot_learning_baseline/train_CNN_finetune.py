@@ -28,12 +28,16 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import argparse
 import os
 import shutil
 import sys
 
+from keras import Model, optimizers
 from keras.applications.mobilenet import MobileNet
+from keras.applications.vgg16 import VGG16
 from keras.callbacks import ModelCheckpoint, TensorBoard
+from keras.layers import Dense, GlobalAveragePooling2D, Dropout
 from keras.optimizers import SGD
 from keras.preprocessing.image import ImageDataGenerator
 
@@ -111,28 +115,40 @@ def main():
         target_size=(224, 224),
         batch_size=batchsize)
 
-    # Train MobileNet
-    model = MobileNet(include_top=True, weights=None,
-                      input_tensor=None, input_shape=None,
-                      pooling=None, classes=classNum[superclass[0]])
+    base_model = VGG16(include_top=False, weights='imagenet')
+    i=0
+    for layer in base_model.layers:
+        layer.trainable = False
+        i = i+1
+        print(i, layer.name)
+
+    x = base_model.output
+    x = Dense(128)(x)
+    x = GlobalAveragePooling2D()(x)
+    x = Dropout(0.2)(x)
+    predictions = Dense(classNum[superclass[0]], activation='softmax')(x)
+
+    # Train Model
+    model = Model(inputs=base_model.input, outputs=predictions)
     model.summary()
-    model.compile(optimizer=SGD(lr=lr, momentum=0.9),
-                  loss='categorical_crossentropy', metrics=['accuracy'])
+    model.compile(loss="categorical_crossentropy", optimizer=optimizers.Adam(), metrics=["accuracy"])
+    # model.compile(optimizer=SGD(lr=lr, momentum=0.9),
+    #               loss='categorical_crossentropy', metrics=['accuracy'])
 
     steps_per_epoch = int(train_generator.n/batchsize)
     validation_steps = int(valid_generator.n/batchsize)
+
     visual = TensorBoard(log_dir="model/", histogram_freq=0,
                 batch_size=batchsize, write_graph=True)
-    weightname = 'model/mobile_'+superclass+'_wgt-{epoch:02d}-{val_loss:.4f}-{val_acc:.3f}.h5'
+    weightname = 'model/mobile_'+superclass+'_wgt_fin-{epoch:02d}-{val_loss:.4f}-{val_acc:.3f}.h5'
 
     checkpointer = ModelCheckpoint(weightname, monitor='val_loss', verbose=0,
                         save_best_only=True, save_weights_only=True, mode='auto', period=1)
 
-    model.load_weights('model/mobile_Animals_wgt.h5')
     model.fit_generator(
         train_generator,
         steps_per_epoch=steps_per_epoch,
-        epochs=100,
+        epochs=1,
         validation_data=valid_generator,
         validation_steps=validation_steps,
         callbacks=[checkpointer, visual])
